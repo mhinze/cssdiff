@@ -1,0 +1,7 @@
+CssDiff 0.1
+
+Parses CSS files and displays information about which classes have been removed
+
+consumes the excellent:
+Mono.Options
+BoneSoft.CSS (http://www.codeproject.com/KB/recipes/CSSParser.aspx)
