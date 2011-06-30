@@ -1,19 +1,23 @@
-CssDiff 0.1
-
-
+CssDiff 0.1.0.1
 
 Parses CSS files and displays classes that have been removed
+
+How to build:
+1. run build.bat
+2. executable will be in 'dist'
+
+
+I wrote this utility because our team provides CSS to several other teams and we need to communicate to them when a CSS class they depend on has been removed
 
   -?, --help, -h             show help
   -f, --from=VALUE           required: the first css file name
   -t, --to=VALUE             required: the second css file name
-  -v, --verbose[=VALUE]      quiet (only output removed class names), loud (
-                               output parse errors)
+  -v, --verbose[=VALUE]      quiet (only output removed class names), loud (output parse errors)
 
+backlog:
+- show added classes
+- show selectors with changed definitions and diffs
 
-
-consumes the excellent:
-
-Mono.Options
-
+consumes:
+Mono.Options (https://github.com/mono/mono/blob/master/mcs/class/Mono.Options/Mono.Options/Options.cs)
 BoneSoft.CSS (http://www.codeproject.com/KB/recipes/CSSParser.aspx)
