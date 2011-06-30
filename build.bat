@@ -1,2 +1,2 @@
-.\build_support\psake.bat default
+.\build_support\psake.bat
 & pause

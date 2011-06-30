@@ -2,18 +2,42 @@ $framework = "4.0"
 
 properties {
 	$projectName = "CssDiff"
+	$version = "0.1.0.1"
 	$projectConfig = "Release"
+	
 	$company = $projectName
 	$base_dir = resolve-path ..
 	$build_dir = resolve-path .
 	$src_dir = "$base_dir\source"
-	$sln = "$src_dir\$projectName.sln"	
+	$sln = "$src_dir\$projectName.sln"
 	$package_dir = "$base_dir\dist"
+	$test_dir = "$base_dir\test"
 	$msbuild_output = "$src_dir\cssdiff\bin\$projectConfig"
-	$version = "0.1.0.1"
 }
 
 task default -depends Merge
+
+task Test -depends Compile {
+
+	exec {
+		
+		# i know this is a brittle test.. but I just want to do something end-to-end to see the thing work
+		delete_directory $test_dir
+		create_directory $test_dir
+		copy_files $msbuild_output $test_dir
+
+		# run the exe
+		$actual = & "$test_dir\$projectName.exe" -f $test_dir\TestFrom.css -t $test_dir\TestTo.css -v=quiet
+		
+		# get expected output
+		$expected = gc "$build_dir\expected-test-output"
+		# assertion
+		if (diff $actual $expected) {
+			diff $actual $expected -includeequal | write-host  -ForeGroundColor 'RED'
+		}
+	
+	}
+}
 
 task Compile -depends Clean, CommonAssemblyInfo { 
 	exec { msbuild /t:build /v:m /nologo /p:Configuration=$projectConfig $sln }
