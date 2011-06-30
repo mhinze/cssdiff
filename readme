@@ -1,13 +1,19 @@
 CssDiff 0.1
 
+
+
 Parses CSS files and displays classes that have been removed
 
-CssDiff.exe
   -?, --help, -h             show help
-  -f, --from=VALUE           required: the first css file
-  -t, --to=VALUE             required: the second css file
-  -v, --verbose              show parsing errors
+  -f, --from=VALUE           required: the first css file name
+  -t, --to=VALUE             required: the second css file name
+  -v, --verbose[=VALUE]      quiet (only output removed class names), loud (
+                               output parse errors)
+
+
 
 consumes the excellent:
+
 Mono.Options
+
 BoneSoft.CSS (http://www.codeproject.com/KB/recipes/CSSParser.aspx)

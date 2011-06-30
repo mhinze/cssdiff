@@ -15,37 +15,39 @@ namespace CssDiff
 
         private static readonly OptionSet _option_set = new OptionSet()
             .Add("?|help|h", "show help", option => _help = option != null)
-            .Add("f=|from=", "required: the first css file", option => _config.From = option)
-            .Add("t=|to=", "required: the second css file", option => _config.To = option)
-            .Add("v|verbose", "show parsing errors", option => _config.Verbose = option != null);
+            .Add("f=|from=", "required: the first css file name", option => _config.From = option)
+            .Add("t=|to=", "required: the second css file name", option => _config.To = option)
+            .Add("v:|verbose:", "quiet (only output removed class names), loud (output parse errors)", option => _config.Verbosity = option);
 
         private static void Main(string[] args)
         {
-            Console.WriteLine("CssDiff {0}", Assembly.GetExecutingAssembly().GetName().Version);
             try
             {
                 _option_set.Parse(args);
             }
             catch (OptionException)
             {
+                Version();
                 Help("Error, usage is: ", _option_set);
             }
+            BasedOnVerbosity(Version, Verbosity.Normal, Verbosity.Loud);
 
             ErrorIfNecessary();
 
-            IEnumerable<string> fromCssClasses = GetCssClasses(_config.From, _config.Verbose);
+            IEnumerable<string> fromCssClasses = GetCssClasses(_config.From, _config.GetVerbosity());
 
-            IEnumerable<string> toCssClasses = GetCssClasses(_config.To, _config.Verbose);
+            IEnumerable<string> toCssClasses = GetCssClasses(_config.To, _config.GetVerbosity());
 
             string[] classesRemoved = fromCssClasses.Except(toCssClasses).OrderBy(x => x).ToArray();
 
             if (!classesRemoved.Any())
             {
-                Console.WriteLine("No classes were removed");
+                BasedOnVerbosity(() => Console.WriteLine("No classes were removed"), Verbosity.Normal, Verbosity.Loud);
             }
             else
             {
-                Console.WriteLine("The following classes appear in the From file but not in the To file:");
+                BasedOnVerbosity(() => Console.WriteLine("The following classes appear in the From file but not in the To file:"), Verbosity.Normal, Verbosity.Loud);
+                
                 foreach (string css in classesRemoved)
                 {
                     Console.WriteLine(css);
@@ -53,25 +55,32 @@ namespace CssDiff
             }
         }
 
-        private static IEnumerable<string> GetCssClasses(string file, bool verbose)
+        private static void Version()
+        {
+            Console.WriteLine("CssDiff {0}", Assembly.GetExecutingAssembly().GetName().Version);
+        }
+
+        private static IEnumerable<string> GetCssClasses(string file, Verbosity verbose)
         {
             var cssParser = new CSSParser();
             
             CSSDocument cssDocument = cssParser.ParseFile(file);
-            
-            if (verbose)
-                if (cssParser.Errors.Any())
-                {
-                    Console.WriteLine("Error parsing: {0}", file);
-                    foreach (var error in cssParser.Errors)
-                    {
-                        Console.WriteLine(error);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Successfully parsed: {0}", file);
-                }
+
+            BasedOnVerbosity(() =>
+                                 {
+                                     if (cssParser.Errors.Any())
+                                     {
+                                         Console.WriteLine("Error parsing: {0}", file);
+                                         foreach (var error in cssParser.Errors)
+                                         {
+                                             Console.WriteLine(error);
+                                         }
+                                     }
+                                     else
+                                     {
+                                         Console.WriteLine("Successfully parsed: {0}", file);
+                                     }
+                                 }, Verbosity.Loud);
 
             return cssDocument.RuleSets
                 .SelectMany(x => x.Selectors)
@@ -92,7 +101,7 @@ namespace CssDiff
             string errormessage = null;
 
             if (_help)
-                errormessage = "CssDiff.exe /f[rom] VALUE /t[o] VALUE";
+                errormessage = "CssDiff.exe -f=FILE1 -t=FILE2 [-v=[quiet|loud]]";
 
             else
                 errormessage = string.Join(Environment.NewLine, _config.GetValidationErrors().ToArray());
@@ -107,13 +116,30 @@ namespace CssDiff
             optionSet.WriteOptionDescriptions(Console.Error);
             Environment.Exit(-1);
         }
+
+        private static void BasedOnVerbosity(Action action, params Verbosity[] allowed)
+        {
+            if (allowed.Contains(_config.GetVerbosity()))
+                action();
+        }
     }
+
 
     internal class Configuration
     {
+        public Configuration()
+        {
+            Verbosity = "normal";
+        }
+
         public string From { get; set; }
         public string To { get; set; }
-        public bool Verbose { get; set; }
+        public string Verbosity { get; set; }
+
+        public Verbosity GetVerbosity()
+        {
+            return (Verbosity) Enum.Parse(typeof (Verbosity), Verbosity, true);
+        }
 
         public IEnumerable<string> GetValidationErrors()
         {
@@ -121,7 +147,17 @@ namespace CssDiff
                 yield return "'From' is required";
             if (string.IsNullOrWhiteSpace(To))
                 yield return "'To' is required";
+            Verbosity val;
+            if (!Enum.TryParse(Verbosity, true, out val))
+                yield return "'Verbosity' should be 'quiet', 'normal', or 'loud'";
             yield break;
         }
+    }
+
+    enum Verbosity
+    {
+        Quiet,
+        Normal,
+        Loud
     }
 }
