@@ -36,16 +36,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BoneSoft.CSS">
-      <HintPath>..\BoneSoft.CSS.dll</HintPath>
+      <HintPath>..\packages\bonesoft.css\BoneSoft.CSS.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Verbosity.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestFrom.css">
