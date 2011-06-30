@@ -323,11 +323,11 @@ div#title {
     width: 6em;
 }
 
-.test1.test2 {
+.test1.test2.test3 {
     height: 6.5em;
 }
 
-.test3 {
+.test4 {
     width: 6em;
 }
 
@@ -339,6 +339,14 @@ a.test5 {
     width: 100%;
 }
 
-#asdasda.test6 .test7 {
+#asdasda.test7 .test8 {
+    width: 100%;
+}
+
+#asdasda .test9 hr .testA {
+    width: 100%;
+}
+
+.testB:hover {
     width: 100%;
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BoneSoft.CSS;
 using Mono.Options;
 
@@ -20,7 +21,7 @@ namespace CssDiff
 
         private static void Main(string[] args)
         {
-            Console.WriteLine("CssDiff 0.1");
+            Console.WriteLine("CssDiff {0}", Assembly.GetExecutingAssembly().GetName().Version);
             try
             {
                 _option_set.Parse(args);
@@ -82,10 +83,8 @@ namespace CssDiff
 
         private static IEnumerable<IEnumerable<string>> ExtractClassFromSimpleSelector(SimpleSelector selector)
         {
-            if (!string.IsNullOrWhiteSpace(selector.Class))
-            yield return new[]{selector.Class};
-            if (selector.Child != null)
-                yield return ExtractClassFromSimpleSelector(selector.Child).SelectMany(x => x);
+            if (!string.IsNullOrWhiteSpace(selector.Class)) yield return new[]{selector.Class};
+            if (selector.Child != null) yield return ExtractClassFromSimpleSelector(selector.Child).SelectMany(x => x);
         }
 
         private static void ErrorIfNecessary()
