@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Security.Principal;
+using System.Threading;
 using BoneSoft.CSS;
 using Mono.Options;
+using RestSharp;
 
 namespace CssDiff
 {
@@ -15,8 +20,8 @@ namespace CssDiff
 
         private static readonly OptionSet _option_set = new OptionSet()
             .Add("?|help|h", "show help", option => _help = option != null)
-            .Add("f=|from=", "required: the first css file name", option => _config.From = option)
-            .Add("t=|to=", "required: the second css file name", option => _config.To = option)
+            .Add("f=|from=", "required: the first css", option => _config.From = option)
+            .Add("t=|to=", "required: the second css", option => _config.To = option)
             .Add("v:|verbose:", "quiet (only output removed class names), loud (output parse errors)", option => _config.Verbosity = option);
 
         private static void Main(string[] args)
@@ -34,9 +39,9 @@ namespace CssDiff
 
             ErrorIfNecessary();
 
-            IEnumerable<string> fromCssClasses = GetCssClasses(_config.From, _config.GetVerbosity());
+            IEnumerable<string> fromCssClasses = GetCssClasses(_config.From);
 
-            IEnumerable<string> toCssClasses = GetCssClasses(_config.To, _config.GetVerbosity());
+            IEnumerable<string> toCssClasses = GetCssClasses(_config.To);
 
             string[] classesRemoved = fromCssClasses.Except(toCssClasses).OrderBy(x => x).ToArray();
 
@@ -60,17 +65,34 @@ namespace CssDiff
             Console.WriteLine("CssDiff {0}", Assembly.GetExecutingAssembly().GetName().Version);
         }
 
-        private static IEnumerable<string> GetCssClasses(string file, Verbosity verbose)
+        private static IEnumerable<string> GetCssClasses(string location)
         {
             var cssParser = new CSSParser();
-            
-            CSSDocument cssDocument = cssParser.ParseFile(file);
+
+            CSSDocument cssDocument = null;
+
+            if (location.StartsWith("http", true, CultureInfo.InvariantCulture))
+            {
+                BasedOnVerbosity(
+                    () => Console.WriteLine("{0} requested...\n", location), Verbosity.Loud);
+
+                var webClient = new WebClient();
+                webClient.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+
+                string css = webClient.DownloadString(location);
+
+                cssDocument = cssParser.ParseText(css);
+            }
+            else
+            {
+                cssDocument = cssParser.ParseFile(location);
+            }
 
             BasedOnVerbosity(() =>
                                  {
                                      if (cssParser.Errors.Any())
                                      {
-                                         Console.WriteLine("Error parsing: {0}", file);
+                                         Console.WriteLine("Error parsing: {0}", location);
                                          foreach (var error in cssParser.Errors)
                                          {
                                              Console.WriteLine(error);
@@ -78,12 +100,14 @@ namespace CssDiff
                                      }
                                      else
                                      {
-                                         Console.WriteLine("Successfully parsed: {0}", file);
+                                         Console.WriteLine("Successfully parsed: {0}", location);
                                      }
                                  }, Verbosity.Loud);
 
             return cssDocument.RuleSets
+                .Where(x => x.Selectors != null)
                 .SelectMany(x => x.Selectors)
+                .Where(x => x.SimpleSelectors != null)
                 .SelectMany(x => x.SimpleSelectors)
                 .SelectMany(ExtractClassFromSimpleSelector)
                 .SelectMany(x => x)
@@ -101,7 +125,7 @@ namespace CssDiff
             string errormessage = null;
 
             if (_help)
-                errormessage = "CssDiff.exe -f=FILE1 -t=FILE2 [-v=[quiet|loud]]";
+                errormessage = "CssDiff.exe -f=LOCATION1 -t=LOCATION2 [-v=[quiet|loud]]";
 
             else
                 errormessage = string.Join(Environment.NewLine, _config.GetValidationErrors().ToArray());
@@ -121,6 +145,32 @@ namespace CssDiff
         {
             if (allowed.Contains(_config.GetVerbosity()))
                 action();
+        }
+    }
+
+    internal class HttpTextGetter
+    {
+        readonly Verbosity _verbosity;
+
+        private static void BasedOnVerbosity(Action action, Verbosity current, params Verbosity[] allowed)
+        {
+            if (allowed.Contains(current))
+                action();
+        }
+
+        public HttpTextGetter(Verbosity verbosity)
+        {
+            _verbosity = verbosity;
+        }
+
+        public string GetText(string location)
+        {
+            var restRequest = new RestRequest(location);
+            var restResponse = new RestClient().Execute(restRequest);
+
+            BasedOnVerbosity(() => Console.WriteLine("{0} response code: {1}", location, restResponse.StatusDescription), _verbosity, Verbosity.Normal, Verbosity.Loud);
+
+            return restResponse.Content;
         }
     }
 }

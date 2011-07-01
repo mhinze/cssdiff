@@ -2,7 +2,7 @@ $framework = "4.0"
 
 properties {
 	$projectName = "CssDiff"
-	$version = "0.1.0.1"
+	$version = "0.1.0.2"
 	$projectConfig = "Release"
 	
 	$company = $projectName
@@ -64,7 +64,9 @@ task Merge -depends Compile, ResetPackage {
 	$temp = "$build_dir\temp_merge"
 	create_directory $temp
 	
-	& "$build_dir\ILMerge" /out:$temp/cssdiff.exe /v4 $msbuild_output/CssDiff.exe $msbuild_output\BoneSoft.Css.dll	
+	$assemblies = @("$msbuild_output\BoneSoft.Css.dll")
+	
+	& "$build_dir\ILMerge" /out:$temp/cssdiff.exe /v4 $msbuild_output/CssDiff.exe $assemblies
 	
 	Get-ChildItem "$temp\**" -Include *.exe | Copy-Item -Destination $package_dir
 	delete_directory $temp
