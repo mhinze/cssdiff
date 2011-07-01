@@ -2,7 +2,7 @@ $framework = "4.0"
 
 properties {
 	$projectName = "CssDiff"
-	$version = "0.1.0.2"
+	$version = "0.1.0.3"
 	$projectConfig = "Release"
 	
 	$company = $projectName

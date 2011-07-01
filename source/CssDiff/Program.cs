@@ -8,7 +8,6 @@ using System.Security.Principal;
 using System.Threading;
 using BoneSoft.CSS;
 using Mono.Options;
-using RestSharp;
 
 namespace CssDiff
 {
@@ -145,32 +144,6 @@ namespace CssDiff
         {
             if (allowed.Contains(_config.GetVerbosity()))
                 action();
-        }
-    }
-
-    internal class HttpTextGetter
-    {
-        readonly Verbosity _verbosity;
-
-        private static void BasedOnVerbosity(Action action, Verbosity current, params Verbosity[] allowed)
-        {
-            if (allowed.Contains(current))
-                action();
-        }
-
-        public HttpTextGetter(Verbosity verbosity)
-        {
-            _verbosity = verbosity;
-        }
-
-        public string GetText(string location)
-        {
-            var restRequest = new RestRequest(location);
-            var restResponse = new RestClient().Execute(restRequest);
-
-            BasedOnVerbosity(() => Console.WriteLine("{0} response code: {1}", location, restResponse.StatusDescription), _verbosity, Verbosity.Normal, Verbosity.Loud);
-
-            return restResponse.Content;
         }
     }
 }
